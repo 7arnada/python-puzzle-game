@@ -31,10 +31,42 @@ from renderer import (
 
 pygame.init()
 
+# =========================
+# PCの画面サイズを取得
+# =========================
+
+display_info = pygame.display.Info()
+
+desktop_width = display_info.current_w
+desktop_height = display_info.current_h
+
+# PC画面の80%以内に収める
+max_window_width = int(desktop_width * 0.8)
+max_window_height = int(desktop_height * 0.8)
+
+# ゲームの縦横比を維持して縮小
+initial_scale = min(
+    max_window_width / BASE_WIDTH,
+    max_window_height / BASE_HEIGHT,
+    1.0
+)
+
+window_width = int(
+    BASE_WIDTH * initial_scale
+)
+
+window_height = int(
+    BASE_HEIGHT * initial_scale
+)
+
+# =========================
+# ウィンドウ作成
+# =========================
+
 screen = pygame.display.set_mode(
     (
-        BASE_WIDTH,
-        BASE_HEIGHT
+        window_width,
+        window_height
     ),
     pygame.RESIZABLE
 )
