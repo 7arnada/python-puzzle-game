@@ -1,190 +1,467 @@
 import pygame
 import sys
 
-# Pygameを初期化
+from settings import (
+    BASE_WIDTH,
+    BASE_HEIGHT,
+    RUN_BUTTON_RECT
+)
+
+from block_data import (
+    create_blocks,
+    create_slots
+)
+
+from rules import (
+    build_program,
+    judge_code
+)
+
+from renderer import (
+    draw_board,
+    draw_game_state,
+    draw_result_message,
+    draw_ui
+)
+
+
+# =========================
+# Pygame初期化
+# =========================
+
 pygame.init()
 
-# 画面サイズ
-WIDTH = 600
-HEIGHT = 800
+screen = pygame.display.set_mode(
+    (
+        BASE_WIDTH,
+        BASE_HEIGHT
+    ),
+    pygame.RESIZABLE
+)
 
-# ゲーム画面を作成
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Python Puzzle Game")
+pygame.display.set_caption(
+    "Python Puzzle Game"
+)
 
-# マスの大きさ
-CELL_SIZE = 120
+game_surface = pygame.Surface(
+    (
+        BASE_WIDTH,
+        BASE_HEIGHT
+    )
+)
 
-# 3×3の盤面の開始位置
-BOARD_X = 120
-BOARD_Y = 50
+clock = pygame.time.Clock()
 
-# キャラクターの位置（行, 列）,ゴールの位置（行, 列）
-player_pos = (2, 0)
-goal_pos = (0, 1)
+font = pygame.font.Font(
+    None,
+    34
+)
 
-# フォント
-font = pygame.font.Font(None, 36)
+small_font = pygame.font.Font(
+    None,
+    26
+)
 
-# 実行ボタン
-button_rect = pygame.Rect(220, 500, 160, 60)
 
-# 実行されたかどうか
-executed = False
+# =========================
+# ブロック・スロット
+# =========================
 
-# コードブロック
-code_block = pygame.Rect(50, 450, 220, 60)
+blocks = create_blocks()
 
-# コードブロックの初期位置
-code_block_start = (50, 450)
+slots = create_slots()
 
-# 実行エリア
-execution_area = pygame.Rect(300, 430, 250, 120)
+slot_contents = [
+    None
+    for _ in slots
+]
 
-# ドラッグ中かどうか
-dragging = False
+button_rect = pygame.Rect(
+    *RUN_BUTTON_RECT
+)
 
-# コードが実行エリアに置かれたか
-code_placed = False
 
-# ゲームを動かし続ける
+# =========================
+# 状態
+# =========================
+
+dragging_block = None
+
+drag_offset_x = 0
+drag_offset_y = 0
+
+current_rule = None
+
 running = True
+
+
+# =========================
+# マウス座標変換
+# =========================
+
+def get_game_mouse_pos(pos):
+
+    window_width, window_height = (
+        screen.get_size()
+    )
+
+    scale = min(
+        window_width / BASE_WIDTH,
+        window_height / BASE_HEIGHT
+    )
+
+    if scale <= 0:
+
+        return -9999, -9999
+
+    scaled_width = (
+        BASE_WIDTH * scale
+    )
+
+    scaled_height = (
+        BASE_HEIGHT * scale
+    )
+
+    offset_x = (
+        window_width
+        - scaled_width
+    ) / 2
+
+    offset_y = (
+        window_height
+        - scaled_height
+    ) / 2
+
+    game_x = (
+        pos[0]
+        - offset_x
+    ) / scale
+
+    game_y = (
+        pos[1]
+        - offset_y
+    ) / scale
+
+    return (
+        int(game_x),
+        int(game_y)
+    )
+
+
+# =========================
+# メインループ
+# =========================
 
 while running:
 
-    # ×ボタンが押されたか確認
+    # =====================
+    # イベント
+    # =====================
+
     for event in pygame.event.get():
+
+        # -----------------
+        # 終了
+        # -----------------
+
         if event.type == pygame.QUIT:
+
             running = False
 
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        if button_rect.collidepoint(event.pos):
-            executed = True
 
-    # 背景を白にする
-    screen.fill("white")
+        # -----------------
+        # マウス押下
+        # -----------------
 
-    # 3×3のマスを描画
-    for row in range(3):
-        for col in range(3):
+        if event.type == pygame.MOUSEBUTTONDOWN:
 
-            x = BOARD_X + col * CELL_SIZE
-            y = BOARD_Y + row * CELL_SIZE
+            if event.button == 1:
 
-            pygame.draw.rect(
-                screen,
-                "black",
-                (x, y, CELL_SIZE, CELL_SIZE),
-                2
-            )
+                mouse_pos = (
+                    get_game_mouse_pos(
+                        event.pos
+                    )
+                )
 
-    # キャラクターを描画
-    player_row, player_col = player_pos
+                block_clicked = False
 
-    player_x = BOARD_X + player_col * CELL_SIZE + CELL_SIZE // 2
-    player_y = BOARD_Y + player_row * CELL_SIZE + CELL_SIZE // 2
+                # ブロック判定
+                for block in reversed(blocks):
 
-    pygame.draw.circle(
-        screen,
-        "gold",
-        (player_x, player_y),
-        30
+                    if block[
+                        "rect"
+                    ].collidepoint(
+                        mouse_pos
+                    ):
+
+                        block_clicked = True
+
+                        dragging_block = block
+
+                        # 編集したら結果解除
+                        current_rule = None
+
+                        # スロットから取り外す
+                        if block[
+                            "slot"
+                        ] is not None:
+
+                            old_slot = (
+                                block["slot"]
+                            )
+
+                            slot_contents[
+                                old_slot
+                            ] = None
+
+                            block["slot"] = None
+
+                        drag_offset_x = (
+                            mouse_pos[0]
+                            - block["rect"].x
+                        )
+
+                        drag_offset_y = (
+                            mouse_pos[1]
+                            - block["rect"].y
+                        )
+
+                        break
+
+                # -----------------
+                # RUN
+                # -----------------
+
+                if not block_clicked:
+
+                    if button_rect.collidepoint(
+                        mouse_pos
+                    ):
+
+                        program = (
+                            build_program(
+                                slot_contents
+                            )
+                        )
+
+                        current_rule = (
+                            judge_code(
+                                program
+                            )
+                        )
+
+
+        # -----------------
+        # ドラッグ
+        # -----------------
+
+        if event.type == pygame.MOUSEMOTION:
+
+            if dragging_block is not None:
+
+                mouse_pos = (
+                    get_game_mouse_pos(
+                        event.pos
+                    )
+                )
+
+                dragging_block[
+                    "rect"
+                ].x = (
+                    mouse_pos[0]
+                    - drag_offset_x
+                )
+
+                dragging_block[
+                    "rect"
+                ].y = (
+                    mouse_pos[1]
+                    - drag_offset_y
+                )
+
+
+        # -----------------
+        # ドロップ
+        # -----------------
+
+        if event.type == pygame.MOUSEBUTTONUP:
+
+            if (
+                event.button == 1
+                and
+                dragging_block is not None
+            ):
+
+                placed = False
+
+                for index, slot in enumerate(
+                    slots
+                ):
+
+                    if slot.colliderect(
+                        dragging_block[
+                            "rect"
+                        ]
+                    ):
+
+                        old_block = (
+                            slot_contents[
+                                index
+                            ]
+                        )
+
+                        # 既にブロックがある
+                        if old_block is not None:
+
+                            old_block[
+                                "rect"
+                            ].topleft = (
+                                old_block[
+                                    "start"
+                                ]
+                            )
+
+                            old_block[
+                                "slot"
+                            ] = None
+
+                        # 新しいブロックを配置
+                        dragging_block[
+                            "rect"
+                        ].center = (
+                            slot.center
+                        )
+
+                        dragging_block[
+                            "slot"
+                        ] = index
+
+                        slot_contents[
+                            index
+                        ] = dragging_block
+
+                        placed = True
+
+                        break
+
+                # スロット外
+                if not placed:
+
+                    dragging_block[
+                        "rect"
+                    ].topleft = (
+                        dragging_block[
+                            "start"
+                        ]
+                    )
+
+                    dragging_block[
+                        "slot"
+                    ] = None
+
+                dragging_block = None
+
+
+    # =====================
+    # 描画
+    # =====================
+
+    game_surface.fill(
+        "white"
     )
 
-    # ゴールを描画
-    goal_row, goal_col = goal_pos
-
-    goal_x = BOARD_X + goal_col * CELL_SIZE
-    goal_y = BOARD_Y + goal_row * CELL_SIZE
-
-    # 旗の棒
-    pygame.draw.line(
-        screen,
-        "black",
-        (goal_x + 45, goal_y + 30),
-        (goal_x + 45, goal_y + 90),
-        4
+    # 盤面
+    draw_board(
+        game_surface
     )
 
-    # 旗
-    pygame.draw.polygon(
-        screen,
-        "red",
-        [
-            (goal_x + 45, goal_y + 30),
-            (goal_x + 85, goal_y + 45),
-            (goal_x + 45, goal_y + 60)
-        ]
+    # ball / goal / 実行結果
+    draw_game_state(
+        game_surface,
+        current_rule,
+        font
     )
-    # RUNが押されたら、for文で9マスにキャラクターを増やす
-    if executed:
 
-        for i in range(9):
+    # CLEAR / FAILED
+    draw_result_message(
+        game_surface,
+        current_rule,
+        font
+    )
 
-            row = i // 3
-            col = i % 3
+    # ブロックUI
+    draw_ui(
+        game_surface,
+        blocks,
+        slots,
+        button_rect,
+        font,
+        small_font
+    )
 
-            x = BOARD_X + col * CELL_SIZE + CELL_SIZE // 2
-            y = BOARD_Y + row * CELL_SIZE + CELL_SIZE // 2
 
-            pygame.draw.circle(
-                screen,
-                "gold",
-                (x, y),
-                30
-            )
-        # ゴールに到達したのでCLEAR
-        clear_text = font.render("CLEAR!", True, "green")
+    # =====================
+    # 自動リサイズ
+    # =====================
 
-        screen.blit(
-            clear_text,
-            (250, 460)
+    window_width, window_height = (
+        screen.get_size()
+    )
+
+    scale = min(
+        window_width / BASE_WIDTH,
+        window_height / BASE_HEIGHT
+    )
+
+    scaled_width = max(
+        1,
+        int(
+            BASE_WIDTH * scale
         )
-
-    # 実行ボタンを描画
-    pygame.draw.rect(
-        screen,
-        "lightblue",
-        button_rect
     )
 
-    button_text = font.render("RUN", True, "black")
-
-    screen.blit(
-        button_text,
-        (button_rect.x + 50, button_rect.y + 15)
-    )
-    # コードブロック
-    pygame.draw.rect(
-        screen,
-        "lightgreen",
-        code_block,
-        border_radius=8
+    scaled_height = max(
+        1,
+        int(
+            BASE_HEIGHT * scale
+        )
     )
 
-    code_text = font.render(
-        "for i in range(9):",
-        True,
+    scaled_surface = (
+        pygame.transform.smoothscale(
+            game_surface,
+            (
+                scaled_width,
+                scaled_height
+            )
+        )
+    )
+
+    screen.fill(
         "black"
     )
 
+    offset_x = (
+        window_width
+        - scaled_width
+    ) // 2
+
+    offset_y = (
+        window_height
+        - scaled_height
+    ) // 2
+
     screen.blit(
-        code_text,
-        (code_block.x + 10, code_block.y + 15)
+        scaled_surface,
+        (
+            offset_x,
+            offset_y
+        )
     )
 
-
-    # 実行エリア
-    pygame.draw.rect(
-        screen,
-        "gray",
-        execution_area,
-        3,
-        border_radius=8
-    )
-
-    # 画面を更新
     pygame.display.flip()
+
+    clock.tick(60)
 
 
 pygame.quit()
