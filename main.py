@@ -24,6 +24,8 @@ from renderer import (
     draw_ui
 )
 
+from stages import STAGES
+
 
 # =========================
 # Pygame初期化
@@ -31,8 +33,9 @@ from renderer import (
 
 pygame.init()
 
+
 # =========================
-# PCの画面サイズを取得
+# 最初のウィンドウサイズ
 # =========================
 
 display_info = pygame.display.Info()
@@ -40,11 +43,14 @@ display_info = pygame.display.Info()
 desktop_width = display_info.current_w
 desktop_height = display_info.current_h
 
-# PC画面の80%以内に収める
-max_window_width = int(desktop_width * 0.8)
-max_window_height = int(desktop_height * 0.8)
+max_window_width = int(
+    desktop_width * 0.8
+)
 
-# ゲームの縦横比を維持して縮小
+max_window_height = int(
+    desktop_height * 0.8
+)
+
 initial_scale = min(
     max_window_width / BASE_WIDTH,
     max_window_height / BASE_HEIGHT,
@@ -59,9 +65,6 @@ window_height = int(
     BASE_HEIGHT * initial_scale
 )
 
-# =========================
-# ウィンドウ作成
-# =========================
 
 screen = pygame.display.set_mode(
     (
@@ -96,20 +99,65 @@ small_font = pygame.font.Font(
 
 
 # =========================
-# ブロック・スロット
+# RUNボタン
 # =========================
-
-blocks = create_blocks()
-
-slots = create_slots()
-
-slot_contents = [
-    None
-    for _ in slots
-]
 
 button_rect = pygame.Rect(
     *RUN_BUTTON_RECT
+)
+
+
+# =========================
+# NEXT STAGEボタン
+# =========================
+
+next_button_rect = pygame.Rect(
+    460,
+    845,
+    200,
+    60
+)
+
+
+# =========================
+# ステージ
+# =========================
+
+current_stage_index = 0
+
+
+def load_stage(stage_index):
+
+    stage = STAGES[
+        stage_index
+    ]
+
+    new_blocks = create_blocks(
+        stage["blocks"]
+    )
+
+    new_slots = create_slots()
+
+    new_slot_contents = [
+        None
+        for _ in new_slots
+    ]
+
+    return (
+        stage,
+        new_blocks,
+        new_slots,
+        new_slot_contents
+    )
+
+
+(
+    current_stage,
+    blocks,
+    slots,
+    slot_contents
+) = load_stage(
+    current_stage_index
 )
 
 
@@ -144,7 +192,10 @@ def get_game_mouse_pos(pos):
 
     if scale <= 0:
 
-        return -9999, -9999
+        return (
+            -9999,
+            -9999
+        )
 
     scaled_width = (
         BASE_WIDTH * scale
@@ -181,29 +232,41 @@ def get_game_mouse_pos(pos):
 
 
 # =========================
+# クリア済みか
+# =========================
+
+def stage_is_clear():
+
+    if current_rule is None:
+
+        return False
+
+    return (
+        current_rule["status"]
+        == "clear"
+    )
+
+
+# =========================
 # メインループ
 # =========================
 
 while running:
 
     # =====================
-    # イベント
+    # イベント処理
     # =====================
 
     for event in pygame.event.get():
-
-        # -----------------
-        # 終了
-        # -----------------
 
         if event.type == pygame.QUIT:
 
             running = False
 
 
-        # -----------------
+        # =====================
         # マウス押下
-        # -----------------
+        # =====================
 
         if event.type == pygame.MOUSEBUTTONDOWN:
 
@@ -217,8 +280,14 @@ while running:
 
                 block_clicked = False
 
-                # ブロック判定
-                for block in reversed(blocks):
+
+                # =====================
+                # ブロック
+                # =====================
+
+                for block in reversed(
+                    blocks
+                ):
 
                     if block[
                         "rect"
@@ -233,7 +302,7 @@ while running:
                         # 編集したら結果解除
                         current_rule = None
 
-                        # スロットから取り外す
+                        # スロットから外す
                         if block[
                             "slot"
                         ] is not None:
@@ -246,7 +315,9 @@ while running:
                                 old_slot
                             ] = None
 
-                            block["slot"] = None
+                            block[
+                                "slot"
+                            ] = None
 
                         drag_offset_x = (
                             mouse_pos[0]
@@ -260,9 +331,10 @@ while running:
 
                         break
 
-                # -----------------
+
+                # =====================
                 # RUN
-                # -----------------
+                # =====================
 
                 if not block_clicked:
 
@@ -278,14 +350,48 @@ while running:
 
                         current_rule = (
                             judge_code(
-                                program
+                                program,
+                                current_stage[
+                                    "clear_rules"
+                                ]
                             )
                         )
 
 
-        # -----------------
+                # =====================
+                # NEXT STAGE
+                # =====================
+
+                if (
+                    stage_is_clear()
+                    and
+                    current_stage_index
+                    < len(STAGES) - 1
+                ):
+
+                    if next_button_rect.collidepoint(
+                        mouse_pos
+                    ):
+
+                        current_stage_index += 1
+
+                        (
+                            current_stage,
+                            blocks,
+                            slots,
+                            slot_contents
+                        ) = load_stage(
+                            current_stage_index
+                        )
+
+                        current_rule = None
+
+                        dragging_block = None
+
+
+        # =====================
         # ドラッグ
-        # -----------------
+        # =====================
 
         if event.type == pygame.MOUSEMOTION:
 
@@ -312,9 +418,9 @@ while running:
                 )
 
 
-        # -----------------
+        # =====================
         # ドロップ
-        # -----------------
+        # =====================
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -342,7 +448,7 @@ while running:
                             ]
                         )
 
-                        # 既にブロックがある
+                        # 既存ブロックを戻す
                         if old_block is not None:
 
                             old_block[
@@ -376,7 +482,8 @@ while running:
 
                         break
 
-                # スロット外
+
+                # スロット以外
                 if not placed:
 
                     dragging_block[
@@ -391,6 +498,7 @@ while running:
                         "slot"
                     ] = None
 
+
                 dragging_block = None
 
 
@@ -402,26 +510,61 @@ while running:
         "white"
     )
 
+
+    # =====================
+    # ステージ名
+    # =====================
+
+    stage_text = font.render(
+        current_stage["name"],
+        True,
+        "black"
+    )
+
+    game_surface.blit(
+        stage_text,
+        (
+            20,
+            20
+        )
+    )
+
+
+    # =====================
     # 盤面
+    # =====================
+
     draw_board(
         game_surface
     )
 
-    # ball / goal / 実行結果
+
+    # =====================
+    # ゲーム状態
+    # =====================
+
     draw_game_state(
         game_surface,
         current_rule,
         font
     )
 
-    # CLEAR / FAILED
+
+    # =====================
+    # CLEAR / ERROR
+    # =====================
+
     draw_result_message(
         game_surface,
         current_rule,
         font
     )
 
-    # ブロックUI
+
+    # =====================
+    # コードUI
+    # =====================
+
     draw_ui(
         game_surface,
         blocks,
@@ -430,6 +573,74 @@ while running:
         font,
         small_font
     )
+
+
+    # =====================
+    # NEXT STAGE
+    # =====================
+
+    if (
+        stage_is_clear()
+        and
+        current_stage_index
+        < len(STAGES) - 1
+    ):
+
+        pygame.draw.rect(
+            game_surface,
+            "lightgreen",
+            next_button_rect,
+            border_radius=8
+        )
+
+        next_text = small_font.render(
+            "NEXT STAGE",
+            True,
+            "black"
+        )
+
+        next_rect = (
+            next_text.get_rect(
+                center=next_button_rect.center
+            )
+        )
+
+        game_surface.blit(
+            next_text,
+            next_rect
+        )
+
+
+    # =====================
+    # 最終ステージCLEAR
+    # =====================
+
+    if (
+        stage_is_clear()
+        and
+        current_stage_index
+        == len(STAGES) - 1
+    ):
+
+        finish_text = small_font.render(
+            "ALL STAGES CLEAR!",
+            True,
+            "green"
+        )
+
+        finish_rect = (
+            finish_text.get_rect(
+                center=(
+                    560,
+                    875
+                )
+            )
+        )
+
+        game_surface.blit(
+            finish_text,
+            finish_rect
+        )
 
 
     # =====================

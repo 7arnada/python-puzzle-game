@@ -338,9 +338,19 @@ def program_matches(
 # コード判定
 # =========================
 
-def judge_code(program):
+def judge_code(
+    program,
+    allowed_rule_names=None
+):
 
     for rule in RULES:
+
+        # ステージで使用できないルールは無視
+        if allowed_rule_names is not None:
+
+            if rule["name"] not in allowed_rule_names:
+
+                continue
 
         if program_matches(
             program,
@@ -349,7 +359,6 @@ def judge_code(program):
 
             return rule
 
-    # どのルールにも一致しない
     return {
         "name": "syntax_error",
 
