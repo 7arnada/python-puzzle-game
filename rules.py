@@ -236,6 +236,8 @@ RULES = [
             ["for", "ball", "in range(9):"]
         ],
 
+        "status": "failed",
+
         "effect": {
             "type": "ball_grid"
         }
