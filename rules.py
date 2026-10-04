@@ -46,7 +46,7 @@ RULES = [
         "status": "clear",
 
         "effect": {
-            "type": "ball_removed"
+            "type": "none"
         }
     },
 
@@ -116,6 +116,28 @@ RULES = [
 
         "effect": {
             "type": "goal_to_ball"
+        }
+    },
+
+    # ---------------------------------
+    # CLEAR 6
+    #
+    # ball_x += 2
+    # ---------------------------------
+
+    {
+        "name": "move_ball_right",
+
+        "program": [
+            ["ball_x", "+=", "2"]
+        ],
+
+        "status": "clear",
+
+        "effect": {
+            "type": "move_ball",
+            "x": 2,
+            "y": 0
         }
     },
 
@@ -214,60 +236,72 @@ RULES = [
             ["for", "ball", "in range(9):"]
         ],
 
-        "status": "failed",
-
         "effect": {
             "type": "ball_grid"
         }
     },
 
+    # ---------------------------------
+    # FAILED
+    #
+    # ball_y += 2
+    # ---------------------------------
+    
+    {
+        "name": "move_ball_wrong",
+
+        "program": [
+            ["ball_y", "+=", "2"]
+        ],
+
+        "status": "failed",
+
+        "effect": {
+            "type": "move_ball",
+            "x": 0,
+            "y": -2
+        }
+    },
 
     # ---------------------------------
     # FAILED
     #
     # clear = ball
-    # for clear in range(9):
     # ---------------------------------
 
-    {
-        "name": "clear_equals_ball",
+        {
+        "name": "clear_is_ball",
 
         "program": [
-            ["clear", "=", "ball"],
-            ["for", "clear", "in range(9):"]
+            ["clear", "=", "ball"]
         ],
 
-        "status": "failed",
+        "status": "ball!",
 
         "effect": {
-            "type": "word_grid",
-            "word": "ball"
+            "type": "none",
         }
     },
-
 
     # ---------------------------------
     # FAILED
     #
     # clear = goal
-    # for clear in range(9):
     # ---------------------------------
 
-    {
-        "name": "clear_equals_goal",
+        {
+        "name": "clear_is_goal",
 
         "program": [
-            ["clear", "=", "goal"],
-            ["for", "clear", "in range(9):"]
+            ["clear", "=", "goal"]
         ],
 
-        "status": "failed",
+        "status": "goal!",
 
         "effect": {
-            "type": "word_grid",
-            "word": "goal"
+            "type": "none",
         }
-    }
+    },
 ]
 
 
@@ -343,28 +377,122 @@ def judge_code(
     allowed_rule_names=None
 ):
 
-    for rule in RULES:
+    # =========================
+    # ① まず2行ルールを判定
+    # =========================
 
-        # ステージで使用できないルールは無視
-        if allowed_rule_names is not None:
+    if len(program) == 2:
 
-            if rule["name"] not in allowed_rule_names:
+        for rule in RULES:
 
+            # -------------------------
+            # このステージで
+            # 使用可能なルールか確認
+            # -------------------------
+
+            if allowed_rule_names is not None:
+
+                if rule["name"] not in allowed_rule_names:
+                    continue
+
+            # -------------------------
+            # 2行ルールだけ確認
+            # -------------------------
+
+            if len(rule["program"]) != 2:
                 continue
 
-        if program_matches(
-            program,
-            rule["program"]
-        ):
+            # -------------------------
+            # 順番を無視して比較
+            # -------------------------
 
-            return rule
+            rule_program = sorted(
+                tuple(line) for line in rule["program"]
+            )
+
+            input_program = sorted(
+                tuple(line) for line in program
+            )
+
+            if rule_program == input_program:
+
+                return {
+                    "syntax_error": False,
+                    "rules": [rule]
+                }
+
+
+    # =========================
+    # ② 2行ルールに一致しなかった場合
+    #    1行ずつ読む
+    # =========================
+
+    matched_rules = []
+
+    for line in program:
+
+        matched_rule = None
+
+        # 登録されているルールを確認
+        for rule in RULES:
+
+            # -------------------------
+            # このステージで
+            # 使用可能なルールか確認
+            # -------------------------
+
+            if allowed_rule_names is not None:
+
+                if rule["name"] not in allowed_rule_names:
+                    continue
+
+            # -------------------------
+            # 1行ルールだけ確認
+            # -------------------------
+
+            if len(rule["program"]) != 1:
+                continue
+
+            # -------------------------
+            # 1行がルールと一致するか
+            # -------------------------
+
+            if rule["program"] == [line]:
+
+                matched_rule = rule
+                break
+
+        # -------------------------
+        # 一致した場合だけ追加
+        # 一致しない行は無視
+        # -------------------------
+
+        if matched_rule is not None:
+
+            matched_rules.append(
+                matched_rule
+            )
+
+
+    # =========================
+    # ③ 1つも一致しなかった
+    #
+    # → Syntax Error
+    # =========================
+
+    if len(matched_rules) == 0:
+
+        return {
+            "syntax_error": True,
+            "rules": []
+        }
+
+
+    # =========================
+    # ④ 1つ以上一致した
+    # =========================
 
     return {
-        "name": "syntax_error",
-
-        "status": "syntax",
-
-        "effect": {
-            "type": "none"
-        }
+        "syntax_error": False,
+        "rules": matched_rules
     }

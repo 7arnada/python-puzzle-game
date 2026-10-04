@@ -11,7 +11,11 @@ BLOCK_WIDTHS = {
     "goal": 80,
     "=": 60,
     "clear": 90,
-    "in range(9):": 220
+    "in range(9):": 220,
+    "ball_x": 100,
+    "ball_y": 100,
+    "+=": 70,
+    "2": 60
 }
 
 

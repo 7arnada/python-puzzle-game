@@ -237,14 +237,30 @@ def get_game_mouse_pos(pos):
 
 def stage_is_clear():
 
+    # まだRUNしていない
     if current_rule is None:
-
         return False
 
-    return (
-        current_rule["status"]
-        == "clear"
+    # Syntax Error
+    if current_rule.get(
+        "syntax_error",
+        False
+    ):
+        return False
+
+    # 実行されたルールを確認
+    rules = current_rule.get(
+        "rules",
+        []
     )
+
+    # clearのルールが1つでもあればクリア
+    for rule in rules:
+
+        if rule.get("status") == "clear":
+            return True
+
+    return False
 
 
 # =========================
@@ -348,13 +364,14 @@ while running:
                             )
                         )
 
-                        current_rule = (
-                            judge_code(
-                                program,
-                                current_stage[
-                                    "clear_rules"
-                                ]
-                            )
+                        allowed_rules = (
+                            current_stage.get("clear_rules", [])
+                            + current_stage.get("failed_rules", [])
+                        )
+
+                        current_rule = judge_code(
+                            program,
+                            allowed_rules
                         )
 
 
@@ -544,9 +561,10 @@ while running:
     # =====================
 
     draw_game_state(
-        game_surface,
-        current_rule,
-        font
+    game_surface,
+    current_rule,
+    font,
+    current_stage
     )
 
 
