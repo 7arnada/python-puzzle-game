@@ -1,4 +1,7 @@
+import math
+
 import pygame
+
 
 from settings import (
     BASE_WIDTH,
@@ -9,28 +12,47 @@ from settings import (
 
 from messages import RESULT_MESSAGES
 
+from rules import simulate_state
+
 
 # ==================================================
 # 盤面
 # ==================================================
 
-def draw_board(surface):
+def draw_board(
+    surface
+):
 
     for row in range(3):
+
         for col in range(3):
 
-            x = BOARD_X + col * CELL_SIZE
-            y = BOARD_Y + row * CELL_SIZE
+            x = (
+                BOARD_X
+                + col
+                * CELL_SIZE
+            )
+
+            y = (
+                BOARD_Y
+                + row
+                * CELL_SIZE
+            )
+
 
             pygame.draw.rect(
+
                 surface,
+
                 "black",
+
                 (
                     x,
                     y,
                     CELL_SIZE,
                     CELL_SIZE
                 ),
+
                 2
             )
 
@@ -57,10 +79,18 @@ def draw_ball(
         + CELL_SIZE // 2
     )
 
+
     pygame.draw.circle(
+
         surface,
+
         "gold",
-        (x, y),
+
+        (
+            x,
+            y
+        ),
+
         30
     )
 
@@ -77,37 +107,199 @@ def draw_goal(
 
     x = (
         BOARD_X
-        + col * CELL_SIZE
+        + col
+        * CELL_SIZE
     )
 
     y = (
         BOARD_Y
-        + row * CELL_SIZE
+        + row
+        * CELL_SIZE
     )
 
-    # 旗の棒
+
+    # 棒
     pygame.draw.line(
+
         surface,
+
         "black",
-        (x + 45, y + 30),
-        (x + 45, y + 90),
+
+        (
+            x + 45,
+            y + 30
+        ),
+
+        (
+            x + 45,
+            y + 90
+        ),
+
         4
     )
 
+
     # 旗
     pygame.draw.polygon(
+
         surface,
+
         "red",
+
         [
-            (x + 45, y + 30),
-            (x + 85, y + 45),
-            (x + 45, y + 60)
+
+            (
+                x + 45,
+                y + 30
+            ),
+
+            (
+                x + 85,
+                y + 45
+            ),
+
+            (
+                x + 45,
+                y + 60
+            ),
         ]
     )
 
 
 # ==================================================
-# 文字を9マスに表示
+# CLEARキラキラ
+# ==================================================
+
+def draw_clear_sparkle(
+    surface,
+    row,
+    col
+):
+
+    center_x = (
+
+        BOARD_X
+
+        + col
+        * CELL_SIZE
+
+        + CELL_SIZE // 2
+    )
+
+
+    center_y = (
+
+        BOARD_Y
+
+        + row
+        * CELL_SIZE
+
+        + CELL_SIZE // 2
+    )
+
+
+    time = (
+        pygame.time.get_ticks()
+        / 180
+    )
+
+
+    sparkles = [
+
+        (-38, -35, 0),
+
+        (38, -28, 1),
+
+        (-38, 30, 2),
+
+        (38, 36, 3),
+
+        (0, -48, 4),
+
+        (0, 48, 5),
+    ]
+
+
+    for (
+        dx,
+        dy,
+        phase
+    ) in sparkles:
+
+
+        pulse = (
+
+            math.sin(
+                time + phase
+            )
+
+            + 1
+
+        ) / 2
+
+
+        size = int(
+
+            3
+
+            + pulse
+            * 7
+        )
+
+
+        x = (
+            center_x
+            + dx
+        )
+
+        y = (
+            center_y
+            + dy
+        )
+
+
+        pygame.draw.line(
+
+            surface,
+
+            "gold",
+
+            (
+                x - size,
+                y
+            ),
+
+            (
+                x + size,
+                y
+            ),
+
+            3
+        )
+
+
+        pygame.draw.line(
+
+            surface,
+
+            "gold",
+
+            (
+                x,
+                y - size
+            ),
+
+            (
+                x,
+                y + size
+            ),
+
+            3
+        )
+
+
+# ==================================================
+# 文字を9マス
 # ==================================================
 
 def draw_word_grid(
@@ -118,80 +310,181 @@ def draw_word_grid(
 
     for index in range(9):
 
-        row = index // 3
-        col = index % 3
+        row = (
+            index // 3
+        )
+
+        col = (
+            index % 3
+        )
+
 
         x = (
+
             BOARD_X
-            + col * CELL_SIZE
+
+            + col
+            * CELL_SIZE
+
             + CELL_SIZE // 2
         )
+
 
         y = (
+
             BOARD_Y
-            + row * CELL_SIZE
+
+            + row
+            * CELL_SIZE
+
             + CELL_SIZE // 2
         )
 
+
         text = font.render(
+
             word,
+
             True,
+
             "black"
         )
 
-        text_rect = text.get_rect(
-            center=(x, y)
+
+        rect = text.get_rect(
+
+            center=(
+                x,
+                y
+            )
         )
+
 
         surface.blit(
+
             text,
-            text_rect
+
+            rect
         )
 
 
 # ==================================================
-# RUN前
+# 状態を描画
 # ==================================================
 
-def draw_default_state(
+def draw_state(
     surface,
-    player_pos,
-    goal_pos
+    state,
+    font
 ):
 
-    draw_ball(
-        surface,
-        player_pos[0],
-        player_pos[1]
-    )
+    ball_positions = state[
+        "ball_positions"
+    ]
 
-    draw_goal(
-        surface,
-        goal_pos[0],
-        goal_pos[1]
-    )
+    goal_positions = state[
+        "goal_positions"
+    ]
 
+    clear_targets = state[
+        "clear_targets"
+    ]
 
-# ==================================================
-# 9マス分の座標を作成
-# ==================================================
-
-def create_grid_positions():
-
-    return [
-        (
-            index // 3,
-            index % 3
-        )
-        for index in range(9)
+    word_grids = state[
+        "word_grids"
     ]
 
 
+    # ==================================================
+    # ballを先に描く
+    # ==================================================
+
+    for row, col in ball_positions:
+
+        draw_ball(
+
+            surface,
+
+            row,
+
+            col
+        )
+
+
+    # ==================================================
+    # goalを後から描く
+    #
+    # → goalが前面
+    # ==================================================
+
+    for row, col in goal_positions:
+
+        draw_goal(
+
+            surface,
+
+            row,
+
+            col
+        )
+
+
+    # ==================================================
+    # 文字
+    # ==================================================
+
+    for word in word_grids:
+
+        draw_word_grid(
+
+            surface,
+
+            word,
+
+            font
+        )
+
+
+    # ==================================================
+    # CLEARエフェクト
+    # ==================================================
+
+    if (
+        "ball"
+        in clear_targets
+    ):
+
+        for row, col in ball_positions:
+
+            draw_clear_sparkle(
+
+                surface,
+
+                row,
+
+                col
+            )
+
+
+    if (
+        "goal"
+        in clear_targets
+    ):
+
+        for row, col in goal_positions:
+
+            draw_clear_sparkle(
+
+                surface,
+
+                row,
+
+                col
+            )
+
+
 # ==================================================
-# RUN後の盤面
-#
-# result["rules"] を
-# 上から1つずつ実行する
+# RUN前 / RUN後
 # ==================================================
 
 def draw_game_state(
@@ -201,325 +494,86 @@ def draw_game_state(
     stage
 ):
 
-    player_pos = stage["player_pos"]
-    goal_pos = stage["goal_pos"]
-
-
     # ==================================================
     # RUN前
     # ==================================================
 
     if result is None:
 
-        draw_default_state(
+        state = simulate_state(
+
+            stage,
+
+            []
+        )
+
+
+        draw_state(
+
             surface,
-            player_pos,
-            goal_pos
-        )
 
-        return
+            state,
 
-
-    # ==================================================
-    # Syntax Error
-    #
-    # 一致した命令が1個もない場合
-    # ==================================================
-
-    if result.get(
-        "syntax_error",
-        False
-    ):
-
-        draw_default_state(
-            surface,
-            player_pos,
-            goal_pos
-        )
-
-        return
-
-
-    # ==================================================
-    # 現在の盤面状態
-    #
-    # 最初は
-    # ball 1個
-    # goal 1個
-    # ==================================================
-
-    ball_positions = [
-        player_pos
-    ]
-
-    goal_positions = [
-        goal_pos
-    ]
-
-    # 文字表示
-    word_grids = []
-
-
-    # ==================================================
-    # コードを1文ずつ実行
-    # ==================================================
-
-    for rule in result["rules"]:
-
-        effect = rule.get(
-            "effect",
-            {}
-        )
-
-        effect_type = effect.get(
-            "type",
-            "none"
-        )
-
-
-        # ==================================================
-        # ball = clear
-        #
-        # ballを全部消す
-        # ==================================================
-
-        if effect_type == "ball_removed":
-
-            ball_positions = []
-
-
-        # ==================================================
-        # goal = clear
-        #
-        # goalを全部消す
-        # ==================================================
-
-        elif effect_type == "goal_removed":
-
-            goal_positions = []
-
-
-        # ==================================================
-        # ball = goal
-        #
-        # ballがgoalになる
-        # 元のgoalは残る
-        # ==================================================
-
-        elif effect_type == "ball_to_goal":
-
-            for position in ball_positions:
-
-                if position not in goal_positions:
-
-                    goal_positions.append(
-                        position
-                    )
-
-            ball_positions = []
-
-
-        # ==================================================
-        # goal = ball
-        #
-        # goalがballになる
-        # 元のballは残る
-        # ==================================================
-
-        elif effect_type == "goal_to_ball":
-
-            for position in goal_positions:
-
-                if position not in ball_positions:
-
-                    ball_positions.append(
-                        position
-                    )
-
-            goal_positions = []
-
-
-        # ==================================================
-        # for ball in range(9):
-        #
-        # ballを9マス配置
-        # ==================================================
-
-        elif effect_type == "ball_grid":
-
-            ball_positions = (
-                create_grid_positions()
-            )
-
-
-        # ==================================================
-        # for goal in range(9):
-        #
-        # goalを9マス配置
-        # ==================================================
-
-        elif effect_type == "goal_grid":
-
-            goal_positions = (
-                create_grid_positions()
-            )
-
-
-        # ==================================================
-        # 過去ルール互換
-        #
-        # goal = clear
-        # for ball in range(9)
-        # ==================================================
-
-        elif effect_type == "ball_grid_goal_hidden":
-
-            goal_positions = []
-
-            ball_positions = (
-                create_grid_positions()
-            )
-
-
-        # ==================================================
-        # 過去ルール互換
-        #
-        # ball = clear
-        # goal = ball
-        # ==================================================
-
-        elif effect_type == "goal_to_ball_only":
-
-            ball_positions = list(
-                goal_positions
-            )
-
-            goal_positions = []
-
-
-        # ==================================================
-        # ball_x += ○
-        # ball_y += ○
-        #
-        # ballを移動
-        # ==================================================
-
-        elif effect_type == "move_ball":
-
-            move_x = effect.get(
-                "x",
-                0
-            )
-
-            move_y = effect.get(
-                "y",
-                0
-            )
-
-            moved_positions = []
-
-            for row, col in ball_positions:
-
-                new_row = (
-                    row
-                    + move_y
-                )
-
-                new_col = (
-                    col
-                    + move_x
-                )
-
-                moved_positions.append(
-                    (
-                        new_row,
-                        new_col
-                    )
-                )
-
-            ball_positions = (
-                moved_positions
-            )
-
-
-        # ==================================================
-        # 文字を9マスに表示
-        #
-        # 例：
-        # for clear in range(9)
-        #
-        # clear = ball の場合なども
-        # rules.py側でwordを変えられる
-        # ==================================================
-
-        elif effect_type == "word_grid":
-
-            word_grids.append(
-                effect.get(
-                    "word",
-                    ""
-                )
-            )
-
-
-        # ==================================================
-        # 何もしない
-        # ==================================================
-
-        elif effect_type == "none":
-
-            pass
-
-
-        # ==================================================
-        # 未登録effect
-        # ==================================================
-
-        else:
-
-            pass
-
-
-    # ==================================================
-    # 最終状態を描画
-    #
-    # コードを全部実行してから
-    # 最後にまとめて描画
-    # ==================================================
-
-
-    # goal
-    for row, col in goal_positions:
-
-        draw_goal(
-            surface,
-            row,
-            col
-        )
-
-
-    # ball
-    for row, col in ball_positions:
-
-        draw_ball(
-            surface,
-            row,
-            col
-        )
-
-
-    # 文字
-    for word in word_grids:
-
-        draw_word_grid(
-            surface,
-            word,
             font
         )
 
 
+        return
+
+
+    # ==================================================
+    # RUNからの時間
+    # ==================================================
+
+    started_at = result.get(
+        "started_at"
+    )
+
+
+    elapsed_ms = None
+
+
+    if started_at is not None:
+
+        elapsed_ms = (
+
+            pygame.time.get_ticks()
+
+            - started_at
+        )
+
+
+    # ==================================================
+    # アニメーション込み状態
+    # ==================================================
+
+    state = simulate_state(
+
+        stage,
+
+        result.get(
+            "rules",
+            []
+        ),
+
+        elapsed_ms=elapsed_ms,
+
+        grid_delay=500
+    )
+
+
+    draw_state(
+
+        surface,
+
+        state,
+
+        font
+    )
+
+
 # ==================================================
-# 実行結果メッセージ
+# リザルトメッセージ
 # ==================================================
 
 def draw_result_message(
@@ -532,76 +586,30 @@ def draw_result_message(
         return
 
 
-    # ==================================================
-    # Syntax Error
-    # ==================================================
-
-    if result.get(
-        "syntax_error",
-        False
-    ):
-
-        status = "syntax"
-
-        message = RESULT_MESSAGES.get(
-            "syntax",
-            "Syntax Error!"
-        )
+    status = result.get(
+        "status",
+        "failed"
+    )
 
 
-    # ==================================================
-    # 1つ以上ルールが実行された
-    # ==================================================
-
-    else:
-
-        rules = result.get(
-            "rules",
-            []
-        )
-
-        if not rules:
-            return
-
-
-        # ----------------------------------------------
-        # 最後に実行されたルールを
-        # メッセージの基準にする
-        # ----------------------------------------------
-
-        last_rule = rules[-1]
-
-        status = last_rule.get(
-            "status",
-            "failed"
-        )
-
-        # 個別messageを優先
-        message = last_rule.get(
-            "message",
-            RESULT_MESSAGES.get(
-                status,
-                ""
-            )
-        )
+    message = RESULT_MESSAGES.get(
+        status,
+        ""
+    )
 
 
     if not message:
         return
 
 
-    # ==================================================
-    # 色
-    # ==================================================
-
     if status == "clear":
 
         text_color = "green"
 
-    elif status in [
+    elif status in (
         "failed",
         "syntax"
-    ]:
+    ):
 
         text_color = "red"
 
@@ -610,39 +618,33 @@ def draw_result_message(
         text_color = "black"
 
 
-    # ==================================================
-    # 改行
-    # ==================================================
+    text = font.render(
 
-    lines = message.split(
-        "\n"
+        message,
+
+        True,
+
+        text_color
     )
 
-    start_y = 420
-    line_height = 38
 
-    for index, line in enumerate(
-        lines
-    ):
+    rect = text.get_rect(
 
-        text = font.render(
-            line,
-            True,
-            text_color
+        center=(
+
+            BASE_WIDTH // 2,
+
+            420
         )
+    )
 
-        rect = text.get_rect(
-            center=(
-                BASE_WIDTH // 2,
-                start_y
-                + index * line_height
-            )
-        )
 
-        surface.blit(
-            text,
-            rect
-        )
+    surface.blit(
+
+        text,
+
+        rect
+    )
 
 
 # ==================================================
@@ -653,6 +655,7 @@ def draw_ui(
     surface,
     blocks,
     slots,
+    slot_contents,
     button_rect,
     font,
     small_font
@@ -663,14 +666,23 @@ def draw_ui(
     # ==================================================
 
     label = small_font.render(
+
         "Code Blocks",
+
         True,
+
         "black"
     )
 
+
     surface.blit(
+
         label,
-        (20, 470)
+
+        (
+            20,
+            455
+        )
     )
 
 
@@ -679,14 +691,23 @@ def draw_ui(
     # ==================================================
 
     label = small_font.render(
+
         "Build Code",
+
         True,
+
         "gray"
     )
 
+
     surface.blit(
+
         label,
-        (40, 655)
+
+        (
+            40,
+            595
+        )
     )
 
 
@@ -694,43 +715,138 @@ def draw_ui(
     # スロット
     # ==================================================
 
-    for slot in slots:
+    for index, slot in enumerate(
+        slots
+    ):
+
 
         pygame.draw.rect(
+
             surface,
+
             "gray",
+
             slot,
+
             3,
+
             border_radius=8
         )
 
 
+        # ==================================================
+        # 固定スロット
+        # "="
+        # "you"
+        # ==================================================
+
+        content = slot_contents[
+            index
+        ]
+
+
+        if (
+            content is not None
+
+            and content.get(
+                "fixed",
+                False
+            )
+        ):
+
+            inner = slot.inflate(
+                -8,
+                -8
+            )
+
+
+            pygame.draw.rect(
+
+                surface,
+
+                "lightgray",
+
+                inner,
+
+                border_radius=6
+            )
+
+
+            text = font.render(
+
+                content[
+                    "text"
+                ],
+
+                True,
+
+                "black"
+            )
+
+
+            text_rect = text.get_rect(
+
+                center=(
+                    slot.center
+                )
+            )
+
+
+            surface.blit(
+
+                text,
+
+                text_rect
+            )
+
+
     # ==================================================
-    # コードブロック
+    # 可動ブロック
     # ==================================================
 
     for block in blocks:
 
         pygame.draw.rect(
+
             surface,
+
             "lightgreen",
-            block["rect"],
+
+            block[
+                "rect"
+            ],
+
             border_radius=8
         )
 
+
         text = font.render(
-            block["text"],
+
+            block[
+                "text"
+            ],
+
             True,
+
             "black"
         )
 
-        text_rect = text.get_rect(
-            center=block["rect"].center
+
+        rect = text.get_rect(
+
+            center=(
+                block[
+                    "rect"
+                ].center
+            )
         )
 
+
         surface.blit(
+
             text,
-            text_rect
+
+            rect
         )
 
 
@@ -739,23 +855,38 @@ def draw_ui(
     # ==================================================
 
     pygame.draw.rect(
+
         surface,
+
         "lightblue",
+
         button_rect,
+
         border_radius=8
     )
 
+
     text = font.render(
+
         "RUN",
+
         True,
+
         "black"
     )
 
-    text_rect = text.get_rect(
-        center=button_rect.center
+
+    rect = text.get_rect(
+
+        center=(
+            button_rect.center
+        )
     )
 
+
     surface.blit(
+
         text,
-        text_rect
+
+        rect
     )

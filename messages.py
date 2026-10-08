@@ -4,5 +4,6 @@ RESULT_MESSAGES = {
     "clear?": "CLEAR!CLEAR!CLEAR!CLEAR!CLEAR!CLEAR!CLEAR!CLEAR!CLEAR!",
     "ball!": "BALL!!!!!!!!",
     "goal!": "GOOOOOOOOOOOOOOOOAL",
+    "YOU!": "YOU!!!!!",
     "syntax": "Syntax Error!"
 }

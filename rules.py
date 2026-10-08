@@ -1,49 +1,100 @@
 from collections import Counter
 
 
-# =========================
-# ゲームルール
-# =========================
+# ==================================================
+# RULES
+#
+# 1文 = 1ルール
+# ==================================================
 
 RULES = [
 
-    # ---------------------------------
-    # CLEAR 1
-    #
-    # goal = clear
-    # for ball in range(9):
-    # ---------------------------------
+    # ==================================================
+    # YOU設定
+    # ==================================================
 
     {
-        "name": "ball_grid",
+        "name": "ball_is_you",
 
         "program": [
-            ["goal", "=", "clear"],
-            ["for", "ball", "in range(9):"]
+            "ball",
+            "=",
+            "you"
         ],
 
-        "status": "clear",
-
         "effect": {
-            "type": "ball_grid"
+            "type": "set_you",
+            "target": "ball"
         }
     },
 
 
-    # ---------------------------------
-    # CLEAR 2
-    #
-    # ball = clear
-    # ---------------------------------
-
     {
-        "name": "clear_ball",
+        "name": "goal_is_you",
 
         "program": [
-            ["ball", "=", "clear"]
+            "goal",
+            "=",
+            "you"
         ],
 
-        "status": "clear",
+        "effect": {
+            "type": "set_you",
+            "target": "goal"
+        }
+    },
+
+
+    # ==================================================
+    # CLEAR設定
+    # ==================================================
+
+    {
+        "name": "ball_is_clear",
+
+        "program": [
+            "ball",
+            "+=",
+            "clear"
+        ],
+
+        "effect": {
+            "type": "mark_clear",
+            "target": "ball"
+        }
+    },
+
+
+    {
+        "name": "goal_is_clear",
+
+        "program": [
+            "goal",
+            "+=",
+            "clear"
+        ],
+
+        "effect": {
+            "type": "mark_clear",
+            "target": "goal"
+        }
+    },
+
+
+    # ==================================================
+    # clear = ball
+    # ==================================================
+
+    {
+        "name": "clear_is_ball",
+
+        "program": [
+            "clear",
+            "+=",
+            "ball"
+        ],
+
+        "message_key": "ball!",
 
         "effect": {
             "type": "none"
@@ -51,22 +102,58 @@ RULES = [
     },
 
 
-    # ---------------------------------
-    # CLEAR 3
-    #
-    # goal = clear
-    # ball = goal
-    # ---------------------------------
+    # ==================================================
+    # clear = goal
+    # ==================================================
 
     {
-        "name": "ball_becomes_goal",
+        "name": "clear_is_goal",
 
         "program": [
-            ["goal", "=", "clear"],
-            ["ball", "=", "goal"]
+            "clear",
+            "+=",
+            "goal"
         ],
 
-        "status": "clear",
+        "message_key": "goal!",
+
+        "effect": {
+            "type": "none"
+        }
+    },
+
+    # ==================================================
+    # clear = you
+    # ==================================================
+
+    {
+        "name": "clear_is_you",
+
+        "program": [
+            "clear",
+            "=",
+            "you"
+        ],
+
+        "message_key": "YOU!",
+
+        "effect": {
+            "type": "none"
+        }
+    },
+
+    # ==================================================
+    # ball = goal
+    # ==================================================
+
+    {
+        "name": "ball_is_goal",
+
+        "program": [
+            "ball",
+            "=",
+            "goal"
+        ],
 
         "effect": {
             "type": "ball_to_goal"
@@ -74,22 +161,56 @@ RULES = [
     },
 
 
-    # ---------------------------------
-    # CLEAR 4
-    #
-    # goal = clear
-    # for goal in range(9):
-    # ---------------------------------
+    # ==================================================
+    # goal = ball
+    # ==================================================
 
     {
-        "name": "goal_grid",
+        "name": "goal_is_ball",
 
         "program": [
-            ["goal", "=", "clear"],
-            ["for", "goal", "in range(9):"]
+            "goal",
+            "=",
+            "ball"
         ],
 
-        "status": "clear",
+        "effect": {
+            "type": "goal_to_ball"
+        }
+    },
+
+
+    # ==================================================
+    # for ball in range(9):
+    # ==================================================
+
+    {
+        "name": "for_ball",
+
+        "program": [
+            "for",
+            "ball",
+            "in range(9):"
+        ],
+
+        "effect": {
+            "type": "ball_grid"
+        }
+    },
+
+
+    # ==================================================
+    # for goal in range(9):
+    # ==================================================
+
+    {
+        "name": "for_goal",
+
+        "program": [
+            "for",
+            "goal",
+            "in range(9):"
+        ],
 
         "effect": {
             "type": "goal_grid"
@@ -97,42 +218,39 @@ RULES = [
     },
 
 
-    # ---------------------------------
-    # CLEAR 5
-    #
-    # ball = clear
-    # goal = ball
-    # ---------------------------------
+    # ==================================================
+    # for clear in range(9):
+    # ==================================================
 
     {
-        "name": "goal_becomes_ball",
+        "name": "for_clear",
 
         "program": [
-            ["ball", "=", "clear"],
-            ["goal", "=", "ball"]
+            "for",
+            "clear",
+            "in range(9):"
         ],
 
-        "status": "clear",
+        "message_key": "clear?",
 
         "effect": {
-            "type": "goal_to_ball"
+            "type": "none"
         }
     },
 
-    # ---------------------------------
-    # CLEAR 6
-    #
+
+    # ==================================================
     # ball_x += 2
-    # ---------------------------------
+    # ==================================================
 
     {
         "name": "move_ball_right",
 
         "program": [
-            ["ball_x", "+=", "2"]
+            "ball_x",
+            "+=",
+            "2"
         ],
-
-        "status": "clear",
 
         "effect": {
             "type": "move_ball",
@@ -142,359 +260,670 @@ RULES = [
     },
 
 
-    # ---------------------------------
-    # FAILED
-    #
-    # goal = ball
-    # ---------------------------------
-
-    {
-        "name": "fail_goal_ball",
-
-        "program": [
-            ["goal", "=", "ball"]
-        ],
-
-        "status": "failed",
-
-        "effect": {
-            "type": "goal_to_ball"
-        }
-    },
-
-        # ---------------------------------
-    # FAILED
-    #
-    # ball = goal
-    # ---------------------------------
-
-    {
-        "name": "fail_ball_goal",
-
-        "program": [
-            ["ball", "=", "goal"]
-        ],
-
-        "status": "failed",
-
-        "effect": {
-            "type": "ball_to_goal"
-        }
-    },
-
-
-    # ---------------------------------
-    # FAILED
-    #
-    # for clear in range(9):
-    # ---------------------------------
-
-    {
-        "name": "for_clear",
-
-        "program": [
-            ["for", "clear", "in range(9):"]
-        ],
-
-        "status": "clear?",
-
-        "effect": {
-            "type": "none",
-        }
-    },
-
-    # ---------------------------------
-    # failed
-    #
-    # for goal in range(9):
-    # ---------------------------------
-
-    {
-        "name": "for_goal",
-
-        "program": [
-            ["for", "goal", "in range(9):"]
-        ],
-
-        "status": "failed",
-
-        "effect": {
-            "type": "goal_grid"
-        }
-    },
-
-    # ---------------------------------
-    # failed
-    #
-    # for ball in range(9):
-    # ---------------------------------
-
-    {
-        "name": "for_ball",
-
-        "program": [
-            ["for", "ball", "in range(9):"]
-        ],
-
-        "status": "failed",
-
-        "effect": {
-            "type": "ball_grid"
-        }
-    },
-
-    # ---------------------------------
-    # FAILED
-    #
+    # ==================================================
     # ball_y += 2
-    # ---------------------------------
-    
+    # ==================================================
+
     {
         "name": "move_ball_wrong",
 
         "program": [
-            ["ball_y", "+=", "2"]
+            "ball_y",
+            "+=",
+            "2"
         ],
-
-        "status": "failed",
 
         "effect": {
             "type": "move_ball",
             "x": 0,
-            "y": -2
-        }
-    },
-
-    # ---------------------------------
-    # FAILED
-    #
-    # clear = ball
-    # ---------------------------------
-
-        {
-        "name": "clear_is_ball",
-
-        "program": [
-            ["clear", "=", "ball"]
-        ],
-
-        "status": "ball!",
-
-        "effect": {
-            "type": "none",
-        }
-    },
-
-    # ---------------------------------
-    # FAILED
-    #
-    # clear = goal
-    # ---------------------------------
-
-        {
-        "name": "clear_is_goal",
-
-        "program": [
-            ["clear", "=", "goal"]
-        ],
-
-        "status": "goal!",
-
-        "effect": {
-            "type": "none",
+            "y": 2
         }
     },
 ]
 
 
-# =========================
-# Build Codeからプログラム取得
-# =========================
+# ==================================================
+# Build Code
+# ↓
+# program
+# ==================================================
 
-def build_program(slot_contents):
-
-    line1 = []
-
-    line2 = []
-
-    # 1行目
-    for block in slot_contents[0:3]:
-
-        if block is not None:
-
-            line1.append(
-                block["text"]
-            )
-
-    # 2行目
-    for block in slot_contents[3:6]:
-
-        if block is not None:
-
-            line2.append(
-                block["text"]
-            )
-
-    lines = []
-
-    if line1:
-        lines.append(line1)
-
-    if line2:
-        lines.append(line2)
-
-    return lines
-
-
-# =========================
-# プログラム比較
-#
-# 1行目と2行目の上下は無視
-# =========================
-
-def program_matches(
-    actual_program,
-    expected_program
+def build_program(
+    slot_contents
 ):
 
-    actual = Counter(
-        tuple(line)
-        for line in actual_program
+    program = []
+
+
+    # 3スロットずつ読む
+    for start in range(
+        0,
+        len(slot_contents),
+        3
+    ):
+
+        row = slot_contents[
+            start:start + 3
+        ]
+
+
+        # 完全な空行なら無視
+        if not any(row):
+            continue
+
+
+        line = []
+
+
+        for block in row:
+
+            if block is None:
+                continue
+
+            line.append(
+                block["text"]
+            )
+
+
+        if line:
+
+            program.append(
+                line
+            )
+
+
+    return program
+
+
+# ==================================================
+# 1文のルールを探す
+# ==================================================
+
+def find_rule(
+    line,
+    allowed_rule_names
+):
+
+    for rule in RULES:
+
+        if (
+            rule["name"]
+            not in allowed_rule_names
+        ):
+
+            continue
+
+
+        if (
+            rule["program"]
+            == line
+        ):
+
+            return rule
+
+
+    return None
+
+
+# ==================================================
+# 9マス座標
+# ==================================================
+
+def create_full_grid():
+
+    return [
+
+        (
+            index // 3,
+            index % 3
+        )
+
+        for index in range(9)
+    ]
+
+
+# ==================================================
+# ルールを実際に実行して
+# 盤面状態を作る
+#
+# elapsed_ms=None
+# ↓
+# 論理判定用
+# 即座に全部実行
+#
+# elapsed_msあり
+# ↓
+# renderer用
+# for文にdelayを付けられる
+# ==================================================
+
+def simulate_state(
+    stage,
+    rules,
+    elapsed_ms=None,
+    grid_delay=500
+):
+
+    player_pos = (
+        stage["player_pos"]
     )
 
-    expected = Counter(
-        tuple(line)
-        for line in expected_program
+    goal_pos = (
+        stage["goal_pos"]
     )
 
-    return actual == expected
+
+    # ==================================================
+    # 初期状態
+    # ==================================================
+
+    ball_positions = [
+        player_pos
+    ]
+
+    goal_positions = [
+        goal_pos
+    ]
 
 
-# =========================
-# コード判定
-# =========================
+    # YOU
+    you_target = stage.get(
+        "default_you",
+        "ball"
+    )
+
+
+    # CLEAR状態
+    clear_targets = set(
+        stage.get(
+            "initial_clear",
+            []
+        )
+    )
+
+
+    word_grids = []
+
+
+    # ==================================================
+    # 上から実行
+    # ==================================================
+
+    for rule in rules:
+
+        effect = rule.get(
+            "effect",
+            {}
+        )
+
+        effect_type = effect.get(
+            "type",
+            "none"
+        )
+
+
+        # ==================================================
+        # ○○ = you
+        # ==================================================
+
+        if effect_type == "set_you":
+
+            you_target = effect.get(
+                "target"
+            )
+
+
+        # ==================================================
+        # ○○ = clear
+        # ==================================================
+
+        elif effect_type == "mark_clear":
+
+            target = effect.get(
+                "target"
+            )
+
+            if target:
+
+                clear_targets.add(
+                    target
+                )
+
+
+        # ==================================================
+        # ball移動
+        # ==================================================
+
+        elif effect_type == "move_ball":
+
+            move_x = effect.get(
+                "x",
+                0
+            )
+
+            move_y = effect.get(
+                "y",
+                0
+            )
+
+
+            ball_positions = [
+
+                (
+                    row + move_y,
+                    col + move_x
+                )
+
+                for row, col
+                in ball_positions
+
+            ]
+
+
+        # ==================================================
+        # for ball
+        # ==================================================
+
+        elif effect_type == "ball_grid":
+
+            # 判定時は即座
+            # 描画時だけdelay
+            if (
+                elapsed_ms is None
+                or elapsed_ms >= grid_delay
+            ):
+
+                ball_positions = (
+                    create_full_grid()
+                )
+
+
+        # ==================================================
+        # for goal
+        # ==================================================
+
+        elif effect_type == "goal_grid":
+
+            if (
+                elapsed_ms is None
+                or elapsed_ms >= grid_delay
+            ):
+
+                goal_positions = (
+                    create_full_grid()
+                )
+
+
+        # ==================================================
+        # ball = goal
+        # ==================================================
+
+        elif effect_type == "ball_to_goal":
+
+            for position in ball_positions:
+
+                if (
+                    position
+                    not in goal_positions
+                ):
+
+                    goal_positions.append(
+                        position
+                    )
+
+
+            ball_positions = []
+
+
+        # ==================================================
+        # goal = ball
+        # ==================================================
+
+        elif effect_type == "goal_to_ball":
+
+            for position in goal_positions:
+
+                if (
+                    position
+                    not in ball_positions
+                ):
+
+                    ball_positions.append(
+                        position
+                    )
+
+
+            goal_positions = []
+
+
+        # ==================================================
+        # 文字
+        # ==================================================
+
+        elif effect_type == "word_grid":
+
+            word = effect.get(
+                "word",
+                ""
+            )
+
+            if word:
+
+                word_grids.append(
+                    word
+                )
+
+
+        elif effect_type == "none":
+
+            pass
+
+
+    return {
+
+        "ball_positions":
+            ball_positions,
+
+        "goal_positions":
+            goal_positions,
+
+        "you_target":
+            you_target,
+
+        "clear_targets":
+            clear_targets,
+
+        "word_grids":
+            word_grids,
+    }
+
+
+# ==================================================
+# YOUがCLEARしたか
+#
+# 条件1:
+# YOU自身がclear
+#
+# 条件2:
+# YOUとclear対象が重なる
+# ==================================================
+
+def is_you_clear(
+    state
+):
+
+    you_target = state[
+        "you_target"
+    ]
+
+    clear_targets = state[
+        "clear_targets"
+    ]
+
+
+    # ==================================================
+    # 自分自身がclear
+    # ==================================================
+
+    if (
+        you_target
+        in clear_targets
+    ):
+
+        return True
+
+
+    # ==================================================
+    # YOUの座標
+    # ==================================================
+
+    if you_target == "ball":
+
+        you_positions = set(
+            state[
+                "ball_positions"
+            ]
+        )
+
+    elif you_target == "goal":
+
+        you_positions = set(
+            state[
+                "goal_positions"
+            ]
+        )
+
+    else:
+
+        return False
+
+
+    # ==================================================
+    # clear対象との接触判定
+    # ==================================================
+
+    for target in clear_targets:
+
+
+        if target == "ball":
+
+            clear_positions = set(
+                state[
+                    "ball_positions"
+                ]
+            )
+
+
+        elif target == "goal":
+
+            clear_positions = set(
+                state[
+                    "goal_positions"
+                ]
+            )
+
+
+        else:
+
+            continue
+
+
+        # 1マスでも重なっている
+        if (
+            you_positions
+            & clear_positions
+        ):
+
+            return True
+
+
+    return False
+
+
+# ==================================================
+# 旧clear_patternsも
+# 一応使用可能
+# ==================================================
+
+def matches_clear_pattern(
+    matched_names,
+    clear_patterns
+):
+
+    matched_counter = Counter(
+        matched_names
+    )
+
+
+    for pattern in clear_patterns:
+
+        if (
+            matched_counter
+            == Counter(pattern)
+        ):
+
+            return True
+
+
+    return False
+
+
+# ==================================================
+# 判定
+# ==================================================
 
 def judge_code(
     program,
-    allowed_rule_names=None
+    stage
 ):
 
-    # =========================
-    # ① まず2行ルールを判定
-    # =========================
+    allowed_rule_names = stage.get(
+        "allowed_rules",
+        []
+    )
 
-    if len(program) == 2:
-
-        for rule in RULES:
-
-            # -------------------------
-            # このステージで
-            # 使用可能なルールか確認
-            # -------------------------
-
-            if allowed_rule_names is not None:
-
-                if rule["name"] not in allowed_rule_names:
-                    continue
-
-            # -------------------------
-            # 2行ルールだけ確認
-            # -------------------------
-
-            if len(rule["program"]) != 2:
-                continue
-
-            # -------------------------
-            # 順番を無視して比較
-            # -------------------------
-
-            rule_program = sorted(
-                tuple(line) for line in rule["program"]
-            )
-
-            input_program = sorted(
-                tuple(line) for line in program
-            )
-
-            if rule_program == input_program:
-
-                return {
-                    "syntax_error": False,
-                    "rules": [rule]
-                }
-
-
-    # =========================
-    # ② 2行ルールに一致しなかった場合
-    #    1行ずつ読む
-    # =========================
 
     matched_rules = []
 
+
+    # ==================================================
+    # 1行ずつ読む
+    # ==================================================
+
     for line in program:
 
-        matched_rule = None
+        rule = find_rule(
+            line,
+            allowed_rule_names
+        )
 
-        # 登録されているルールを確認
-        for rule in RULES:
 
-            # -------------------------
-            # このステージで
-            # 使用可能なルールか確認
-            # -------------------------
-
-            if allowed_rule_names is not None:
-
-                if rule["name"] not in allowed_rule_names:
-                    continue
-
-            # -------------------------
-            # 1行ルールだけ確認
-            # -------------------------
-
-            if len(rule["program"]) != 1:
-                continue
-
-            # -------------------------
-            # 1行がルールと一致するか
-            # -------------------------
-
-            if rule["program"] == [line]:
-
-                matched_rule = rule
-                break
-
-        # -------------------------
-        # 一致した場合だけ追加
         # 一致しない行は無視
-        # -------------------------
+        if rule is None:
 
-        if matched_rule is not None:
-
-            matched_rules.append(
-                matched_rule
-            )
+            continue
 
 
-    # =========================
-    # ③ 1つも一致しなかった
+        matched_rules.append(
+            rule
+        )
+
+
+    # ==================================================
+    # YOU設定以外のルール
+    # ==================================================
+
+    action_rules = [
+
+        rule
+
+        for rule in matched_rules
+
+        if rule.get(
+            "effect",
+            {}
+        ).get(
+            "type"
+        ) != "set_you"
+
+    ]
+
+
+    # ==================================================
+    # 2・3行目にコードがあるのに
+    # 1文も意味がない
     #
     # → Syntax Error
-    # =========================
+    # ==================================================
 
-    if len(matched_rules) == 0:
+    action_input_exists = (
+        len(program) >= 2
+    )
+
+
+    if (
+        action_input_exists
+        and not action_rules
+    ):
 
         return {
+
             "syntax_error": True,
-            "rules": []
+
+            "status": "syntax",
+
+            "rules": matched_rules,
         }
 
 
-    # =========================
-    # ④ 1つ以上一致した
-    # =========================
+    # ==================================================
+    # 最終状態
+    # ==================================================
+
+    state = simulate_state(
+        stage,
+        matched_rules
+    )
+
+
+    # ==================================================
+    # YOU / CLEARルール
+    # ==================================================
+
+    dynamic_clear = (
+        is_you_clear(
+            state
+        )
+    )
+
+
+    # ==================================================
+    # 旧clear_patterns
+    # ==================================================
+
+    action_names = [
+
+        rule["name"]
+
+        for rule in action_rules
+
+    ]
+
+
+    pattern_clear = (
+        matches_clear_pattern(
+
+            action_names,
+
+            stage.get(
+                "clear_patterns",
+                []
+            )
+        )
+    )
+
+
+    # ==================================================
+    # 最終CLEAR
+    # ==================================================
+
+    is_clear = (
+        dynamic_clear
+        or pattern_clear
+    )
+
 
     return {
+
         "syntax_error": False,
-        "rules": matched_rules
+
+        "status": (
+            "clear"
+            if is_clear
+            else "failed"
+        ),
+
+        "rules": matched_rules,
+
+        "state": state,
     }

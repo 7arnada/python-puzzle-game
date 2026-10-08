@@ -1,7 +1,7 @@
 import pygame
 
 
-RESULT_DELAY = 200
+RESULT_DELAY = 1500
 RESULT_ANIMATION = 280
 
 
